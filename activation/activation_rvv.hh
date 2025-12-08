@@ -75,6 +75,7 @@ inline vfloat32m8_t rsqrt_newton_raphson(vfloat32m8_t y, vfloat32m8_t a, size_t 
   return __riscv_vfmul_vv_f32m8(y, tmp, vl);
 }
 
+// Dish: https://danieldk.eu/Dish-Activation
 inline vfloat32m8_t riscv_vfdish(vfloat32m8_t x, size_t vl) {
   // First make the sigmoidal 0.5 (1 + x / sqrt(1 + x^2))
   auto sigmoidal = __riscv_vfmul_vv_f32m8(x, x, vl);
