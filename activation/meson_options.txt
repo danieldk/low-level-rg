@@ -1,0 +1,2 @@
+option('march', type: 'string', value: 'rv64gcv',
+       description: 'RISC-V architecture string (e.g., rv64gcv or rv64gc_xtheadvector)')
