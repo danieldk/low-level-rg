@@ -15,6 +15,10 @@ inline float logistic_cdf(float x) {
   return 1.0f / (1 + std::expf(-x));
 }
 
+inline float dish(float x) {
+    return 0.5f * x * (1.0 + x / std::sqrt(1+x*x));
+}
+
 inline float swishf(float x) {
   return x * logistic_cdf(x);
 }

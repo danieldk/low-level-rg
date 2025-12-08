@@ -66,12 +66,47 @@ inline vfloat32m8_t riscv_vfgelu_cook(vfloat32m8_t x, size_t vl) {
 }
 
 
+// Newton-Raphson iteration for inverse square root: y' = y * (1.5 - 0.5 * a * y * y)
+inline vfloat32m8_t rsqrt_newton_raphson(vfloat32m8_t y, vfloat32m8_t a, size_t vl) {
+  auto tmp = __riscv_vfmul_vv_f32m8(y, y, vl);
+  tmp = __riscv_vfmul_vv_f32m8(a, tmp, vl);
+  tmp = __riscv_vfmul_vf_f32m8(tmp, 0.5f, vl);
+  tmp = __riscv_vfrsub_vf_f32m8(tmp, 1.5f, vl);
+  return __riscv_vfmul_vv_f32m8(y, tmp, vl);
+}
+
 inline vfloat32m8_t riscv_vfdish(vfloat32m8_t x, size_t vl) {
   // First make the sigmoidal 0.5 (1 + x / sqrt(1 + x^2))
   auto sigmoidal = __riscv_vfmul_vv_f32m8(x, x, vl);
   sigmoidal = __riscv_vfadd_vf_f32m8(sigmoidal, 1.0f, vl);
+
+#if __riscv_xtheadvector && false
+  // T-Head like the Milk-V doesn't have inverse square root :(.
   sigmoidal = __riscv_vfsqrt_v_f32m8(sigmoidal, vl);
   sigmoidal = __riscv_vfdiv_vv_f32m8(x, sigmoidal, vl);
+#elif __riscv_xtheadvector && true
+  // https://en.wikipedia.org/wiki/Fast_inverse_square_root
+  auto i = __riscv_vreinterpret_v_f32m8_u32m8(sigmoidal);
+  i = __riscv_vsrl_vx_u32m8(i, 1, vl);
+  i = __riscv_vrsub_vx_u32m8(i, 0x5f3759df, vl);
+  auto rsqrt = __riscv_vreinterpret_v_u32m8_f32m8(i);
+
+  // Newton-Raphson iterations for better accuracy, one iteration
+  // diverges too much from scalar Dish.
+  rsqrt = rsqrt_newton_raphson(rsqrt, sigmoidal, vl);
+  rsqrt = rsqrt_newton_raphson(rsqrt, sigmoidal, vl);
+
+  sigmoidal = __riscv_vfmul_vv_f32m8(x, rsqrt, vl);
+#else
+  // Inverse square root with 7 bit precision.
+  auto rsqrt = __riscv_vfrsqrt7_v_f32m8(sigmoidal, vl);
+
+  // Do an additional Newton-Raphson iteration.
+  rsqrt = rsqrt_newton_raphson(rsqrt, sigmoidal, vl);
+  sigmoidal = __riscv_vfmul_vv_f32m8(x, rsqrt, vl);
+#endif
+
+
   sigmoidal = __riscv_vfadd_vf_f32m8(sigmoidal, 1.0f, vl);
   sigmoidal = __riscv_vfmul_vf_f32m8(sigmoidal, 0.5, vl);
 
@@ -88,4 +123,3 @@ void elementwise_loop_rvv(F f, float const * __restrict__ x, size_t n, float * _
         __riscv_vse32_v_f32m8(out, r, vl);
     }
 }
-
