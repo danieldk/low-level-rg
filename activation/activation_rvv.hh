@@ -75,6 +75,21 @@ inline vfloat32m8_t rsqrt_newton_raphson(vfloat32m8_t y, vfloat32m8_t a, size_t 
   return __riscv_vfmul_vv_f32m8(y, tmp, vl);
 }
 
+// https://en.wikipedia.org/wiki/Fast_inverse_square_root
+inline vfloat32m8_t fast_rsqrt(vfloat32m8_t x, size_t vl) {
+  auto i = __riscv_vreinterpret_v_f32m8_u32m8(x);
+  i = __riscv_vsrl_vx_u32m8(i, 1, vl);
+  i = __riscv_vrsub_vx_u32m8(i, 0x5f3759df, vl);
+  auto rsqrt = __riscv_vreinterpret_v_u32m8_f32m8(i);
+
+  // Newton-Raphson iterations for better accuracy, one iteration
+  // diverges too much from scalar Dish.
+  rsqrt = rsqrt_newton_raphson(rsqrt, x, vl);
+  rsqrt = rsqrt_newton_raphson(rsqrt, x, vl);
+
+  return rsqrt;
+}
+
 // Dish: https://danieldk.eu/Dish-Activation
 inline vfloat32m8_t riscv_vfdish(vfloat32m8_t x, size_t vl) {
   // First make the sigmoidal 0.5 (1 + x / sqrt(1 + x^2))
@@ -86,17 +101,7 @@ inline vfloat32m8_t riscv_vfdish(vfloat32m8_t x, size_t vl) {
   sigmoidal = __riscv_vfsqrt_v_f32m8(sigmoidal, vl);
   sigmoidal = __riscv_vfdiv_vv_f32m8(x, sigmoidal, vl);
 #elif __riscv_xtheadvector && true
-  // https://en.wikipedia.org/wiki/Fast_inverse_square_root
-  auto i = __riscv_vreinterpret_v_f32m8_u32m8(sigmoidal);
-  i = __riscv_vsrl_vx_u32m8(i, 1, vl);
-  i = __riscv_vrsub_vx_u32m8(i, 0x5f3759df, vl);
-  auto rsqrt = __riscv_vreinterpret_v_u32m8_f32m8(i);
-
-  // Newton-Raphson iterations for better accuracy, one iteration
-  // diverges too much from scalar Dish.
-  rsqrt = rsqrt_newton_raphson(rsqrt, sigmoidal, vl);
-  rsqrt = rsqrt_newton_raphson(rsqrt, sigmoidal, vl);
-
+  auto rsqrt = fast_rsqrt(sigmoidal, vl);
   sigmoidal = __riscv_vfmul_vv_f32m8(x, rsqrt, vl);
 #else
   // Inverse square root with 7 bit precision.
