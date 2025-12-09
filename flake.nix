@@ -20,6 +20,7 @@
             #config = "riscv64-unknown-linux-gnu";
             config = "riscv64-unknown-linux-musl";
           };
+          overlays = [ (self: super: { gcc = self.gcc15; }) ];
           inherit system;
         };
       in
@@ -27,7 +28,7 @@
         devShells.default =
           cross.mkShell {
             # RISC-V dependencies if you need them.
-            nativeBuildInputs = with nixpkgs.legacyPackages.x86_64-linux;[ clang gnuplot meson ninja pkg-config zig zls ];
+            nativeBuildInputs = with nixpkgs.legacyPackages.x86_64-linux;[ clang cmake gnuplot meson ninja pkg-config zig zls ];
             buildInputs = with cross.pkgsStatic; [ catch2 zlib ];
           };
       }

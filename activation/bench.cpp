@@ -1,9 +1,8 @@
-#include <ctime>
+#include <benchmark/benchmark.h>
 #include <random>
 #include <vector>
 #include <algorithm>
 
-#include "../ubench.h"
 #include "activation_rvv.hh"
 #include "activation_scalar.hh"
 
@@ -37,98 +36,115 @@ void dish_scalar(float const * __restrict__ x, size_t n, float * __restrict__ ou
   elementwise_loop_scalar(dish, x, n, out);
 }
 
-// Swish benchmarks
-UBENCH_EX(swish, scalar) {
+static std::vector<float> generate_test_data(size_t size) {
     std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
+    std::mt19937 mersenne_engine{rnd_device()};
     std::normal_distribution dist{0.0, 2.0};
     auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
 
-    std::vector<float> out(x.size());
+    std::vector<float> data(size);
+    std::generate(data.begin(), data.end(), gen);
+    return data;
+}
 
-    UBENCH_DO_BENCHMARK() {
+static void BM_swish_scalar(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
+
+    for (auto _ : state) {
         swish_scalar(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-UBENCH_EX(swish, vectorized) {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
-    std::normal_distribution dist{0.0, 2.0};
-    auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
+static void BM_swish_vectorized(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
 
-    std::vector<float> out(x.size());
-
-    UBENCH_DO_BENCHMARK() {
+    for (auto _ : state) {
         swish_vectorized(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-// GELU Cook approximation benchmarks
-UBENCH_EX(gelu_cook, scalar) {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
-    std::normal_distribution dist{0.0, 2.0};
-    auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
+static void BM_gelu_cook_scalar(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
 
-    std::vector<float> out(x.size());
-
-    UBENCH_DO_BENCHMARK() {
+    for (auto _ : state) {
         gelu_cook_scalar(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-UBENCH_EX(gelu_cook, vectorized) {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
-    std::normal_distribution dist{0.0, 2.0};
-    auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
+static void BM_gelu_cook_vectorized(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
 
-    std::vector<float> out(x.size());
-
-    UBENCH_DO_BENCHMARK() {
+    for (auto _ : state) {
         gelu_cook_vectorized(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-// Dish activation benchmarks
-UBENCH_EX(dish, scalar) {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
-    std::normal_distribution dist{0.0, 2.0};
-    auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
+static void BM_dish_scalar(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
 
-    std::vector<float> out(x.size());
-
-    UBENCH_DO_BENCHMARK() {
+    for (auto _ : state) {
         dish_scalar(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-UBENCH_EX(dish, vectorized) {
-    std::random_device rnd_device;
-    std::mt19937 mersenne_engine {rnd_device()};
-    std::normal_distribution dist{0.0, 2.0};
-    auto gen = [&](){ return dist(mersenne_engine); };
-    std::vector<float> x(65536);
-    std::generate(x.begin(), x.end(), gen);
+static void BM_dish_vectorized(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
 
-    std::vector<float> out(x.size());
-
-    UBENCH_DO_BENCHMARK() {
+    for (auto _ : state) {
         dish_vectorized(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
-//UBENCH_STATE();
-UBENCH_MAIN();
+const size_t BENCH_SIZE = 1024;
+
+// Register benchmarks with different sizes
+BENCHMARK(BM_swish_scalar)->Arg(BENCH_SIZE);
+BENCHMARK(BM_swish_vectorized)->Arg(BENCH_SIZE);
+
+BENCHMARK(BM_gelu_cook_scalar)->Arg(BENCH_SIZE);
+BENCHMARK(BM_gelu_cook_vectorized)->Arg(BENCH_SIZE);
+
+BENCHMARK(BM_dish_scalar)->Arg(BENCH_SIZE);
+BENCHMARK(BM_dish_vectorized)->Arg(BENCH_SIZE);
+
+// Alternative: Register with multiple sizes for comparison
+// BENCHMARK(BM_swish_scalar)->Range(1024, 1<<20);
+// BENCHMARK(BM_swish_vectorized)->Range(1024, 1<<20);
+
+BENCHMARK_MAIN();

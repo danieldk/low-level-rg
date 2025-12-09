@@ -1,18 +1,11 @@
-project('activation_tests', 'cpp',
-  version: '0.1.0',
-  default_options: [
-    'cpp_std=c++17',
-    'warning_level=2',
-    'buildtype=release',
-  ]
-)
-
 catch2_dep = dependency('catch2', required: true)
 
+# Get march option from parent project
 march = get_option('march')
 
 riscv_vector_flags = [
   '-march=' + march,
+  '-mno-fence-tso',
 ]
 
 if get_option('buildtype') == 'release'
@@ -31,9 +24,11 @@ test_exe = executable('activation_tests',
 
 test('activation tests', test_exe)
 
+# benchmark_dep is provided by parent meson.build
 bench_exe = executable('activation_bench',
   'bench.cpp',
   include_directories: inc_dirs,
+  dependencies: [benchmark_dep],
   cpp_args: riscv_vector_flags,
   link_args: ['-static'],
 )
