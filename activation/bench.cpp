@@ -7,6 +7,12 @@
 #include "activation_scalar.hh"
 
 __attribute__((noinline))
+void relu_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+  elementwise_loop_rvv(riscv_vfrelu, x, n, out);
+}
+
+
+__attribute__((noinline))
 void swish_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
   elementwise_loop_rvv(riscv_vfswish, x, n, out);
 }
@@ -131,6 +137,20 @@ static void BM_dish_vectorized(benchmark::State& state) {
     state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
+static void BM_relu_vectorized(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
+
+    for (auto _ : state) {
+        relu_vectorized(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
+}
+
 const size_t BENCH_SIZE = 1024;
 
 // Register benchmarks with different sizes
@@ -142,6 +162,8 @@ BENCHMARK(BM_gelu_cook_vectorized)->Arg(BENCH_SIZE);
 
 BENCHMARK(BM_dish_scalar)->Arg(BENCH_SIZE);
 BENCHMARK(BM_dish_vectorized)->Arg(BENCH_SIZE);
+
+BENCHMARK(BM_relu_vectorized)->Arg(BENCH_SIZE);
 
 // Alternative: Register with multiple sizes for comparison
 // BENCHMARK(BM_swish_scalar)->Range(1024, 1<<20);

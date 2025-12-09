@@ -120,6 +120,10 @@ inline vfloat32m8_t riscv_vfdish(vfloat32m8_t x, size_t vl) {
   return __riscv_vfmul_vv_f32m8(x, sigmoidal, vl);
 }
 
+inline vfloat32m8_t riscv_vfrelu(vfloat32m8_t x, size_t vl) {
+  return __riscv_vfmax_vf_f32m8(x, 0.0f, vl);
+}
+
 template <typename F>
 void elementwise_loop_rvv(F f, float const * __restrict__ x, size_t n, float * __restrict__ out) {
     for (size_t vl; n > 0; n -= vl, x += vl, out += vl) {
