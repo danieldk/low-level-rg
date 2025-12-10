@@ -1,42 +1,51 @@
+#include <cmath>
+#include <vector>
+
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
-#include <vector>
-#include <cmath>
 
 #include "activation_rvv.hh"
 #include "activation_scalar.hh"
 
 using namespace Catch::Detail;
 
-void swish_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void swish_vectorized(float const *__restrict__ x, size_t n,
+                      float *__restrict__ out) {
   elementwise_loop_rvv(riscv_vfswish, x, n, out);
 }
 
-void swish_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void swish_scalar(float const *__restrict__ x, size_t n,
+                  float *__restrict__ out) {
   elementwise_loop_scalar(swishf, x, n, out);
 }
 
-void gelu_cook_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void gelu_cook_vectorized(float const *__restrict__ x, size_t n,
+                          float *__restrict__ out) {
   elementwise_loop_rvv(riscv_vfgelu_cook, x, n, out);
 }
 
-void gelu_cook_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void gelu_cook_scalar(float const *__restrict__ x, size_t n,
+                      float *__restrict__ out) {
   elementwise_loop_scalar(geluf_tanh_cook, x, n, out);
 }
 
-void gelu_logistic_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void gelu_logistic_vectorized(float const *__restrict__ x, size_t n,
+                              float *__restrict__ out) {
   elementwise_loop_rvv(riscv_vfgelu_logistic, x, n, out);
 }
 
-void gelu_logistic_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void gelu_logistic_scalar(float const *__restrict__ x, size_t n,
+                          float *__restrict__ out) {
   elementwise_loop_scalar(geluf_logistic, x, n, out);
 }
 
-void dish_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void dish_vectorized(float const *__restrict__ x, size_t n,
+                     float *__restrict__ out) {
   elementwise_loop_rvv(riscv_vfdish, x, n, out);
 }
 
-void dish_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+void dish_scalar(float const *__restrict__ x, size_t n,
+                 float *__restrict__ out) {
   elementwise_loop_scalar(dish, x, n, out);
 }
 
