@@ -33,6 +33,16 @@ void gelu_cook_scalar(float const * __restrict__ x, size_t n, float * __restrict
 }
 
 __attribute__((noinline))
+void gelu_logistic_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+  elementwise_loop_rvv(riscv_vfgelu_logistic, x, n, out);
+}
+
+__attribute__((noinline))
+void gelu_logistic_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+  elementwise_loop_scalar(geluf_logistic, x, n, out);
+}
+
+__attribute__((noinline))
 void dish_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
   elementwise_loop_rvv(riscv_vfdish, x, n, out);
 }
@@ -109,6 +119,34 @@ static void BM_gelu_cook_vectorized(benchmark::State& state) {
     state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
 }
 
+static void BM_gelu_logistic_scalar(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
+
+    for (auto _ : state) {
+        gelu_logistic_scalar(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
+}
+
+static void BM_gelu_logistic_vectorized(benchmark::State& state) {
+    const size_t size = state.range(0);
+    auto x = generate_test_data(size);
+    std::vector<float> out(size);
+
+    for (auto _ : state) {
+        gelu_logistic_vectorized(x.data(), x.size(), out.data());
+        benchmark::DoNotOptimize(out.data());
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(size));
+}
+
 static void BM_dish_scalar(benchmark::State& state) {
     const size_t size = state.range(0);
     auto x = generate_test_data(size);
@@ -159,6 +197,9 @@ BENCHMARK(BM_swish_vectorized)->Arg(BENCH_SIZE);
 
 BENCHMARK(BM_gelu_cook_scalar)->Arg(BENCH_SIZE);
 BENCHMARK(BM_gelu_cook_vectorized)->Arg(BENCH_SIZE);
+
+BENCHMARK(BM_gelu_logistic_scalar)->Arg(BENCH_SIZE);
+BENCHMARK(BM_gelu_logistic_vectorized)->Arg(BENCH_SIZE);
 
 BENCHMARK(BM_dish_scalar)->Arg(BENCH_SIZE);
 BENCHMARK(BM_dish_vectorized)->Arg(BENCH_SIZE);

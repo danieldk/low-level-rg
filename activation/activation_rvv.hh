@@ -65,6 +65,13 @@ inline vfloat32m8_t riscv_vfgelu_cook(vfloat32m8_t x, size_t vl) {
     return __riscv_vfmul_vf_f32m8(r, 0.5f, vl);
 }
 
+inline vfloat32m8_t riscv_vfgelu_logistic(vfloat32m8_t x, size_t vl) {
+  // xσ(1.702x), from Hendrycks & Gimpel, 2016
+  auto scaled_x = __riscv_vfmul_vf_f32m8(x, 1.702, vl);
+  auto r = riscv_vflogcdf(scaled_x, vl);
+  return __riscv_vfmul_vv_f32m8(x, r, vl);
+}
+
 
 // Newton-Raphson iteration for inverse square root: y' = y * (1.5 - 0.5 * a * y * y)
 inline vfloat32m8_t rsqrt_newton_raphson(vfloat32m8_t y, vfloat32m8_t a, size_t vl) {

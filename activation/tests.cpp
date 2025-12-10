@@ -24,6 +24,14 @@ void gelu_cook_scalar(float const * __restrict__ x, size_t n, float * __restrict
   elementwise_loop_scalar(geluf_tanh_cook, x, n, out);
 }
 
+void gelu_logistic_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+  elementwise_loop_rvv(riscv_vfgelu_logistic, x, n, out);
+}
+
+void gelu_logistic_scalar(float const * __restrict__ x, size_t n, float * __restrict__ out) {
+  elementwise_loop_scalar(geluf_logistic, x, n, out);
+}
+
 void dish_vectorized(float const * __restrict__ x, size_t n, float * __restrict__ out) {
   elementwise_loop_rvv(riscv_vfdish, x, n, out);
 }
@@ -81,6 +89,24 @@ TEST_CASE("GELU Cook approximation", "[gelu][cook]") {
 
   gelu_cook_vectorized(x.data(), x.size(), out_vectorized.data());
   gelu_cook_scalar(x.data(), x.size(), out_scalar.data());
+
+  for (size_t i = 0; i < x.size(); ++i) {
+    INFO("x[" << i << "] = " << x[i]);
+    REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).margin(0.01));
+  }
+}
+
+TEST_CASE("GELU Logistic approximation", "[gelu][logistic]") {
+  std::vector<float> x;
+  for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
+    x.push_back(e);
+  }
+
+  std::vector<float> out_vectorized(x.size());
+  std::vector<float> out_scalar(x.size());
+
+  gelu_logistic_vectorized(x.data(), x.size(), out_vectorized.data());
+  gelu_logistic_scalar(x.data(), x.size(), out_scalar.data());
 
   for (size_t i = 0; i < x.size(); ++i) {
     INFO("x[" << i << "] = " << x[i]);

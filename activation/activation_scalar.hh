@@ -33,6 +33,10 @@ inline float geluf_tanh_cook(float x) {
     return 0.5f * x * (1.0f + tanhf(0.8f * x));
 }
 
+inline float geluf_logistic(float x) {
+  return x * logistic_cdf(1.702 * x);
+}
+
 template <typename F>
 void elementwise_loop_scalar(F f, float const * __restrict__ x, size_t n, float * __restrict__ out) {
     for (size_t i = 0; i < n; ++i) {
