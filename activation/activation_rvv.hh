@@ -132,6 +132,16 @@ inline vfloat32m8_t riscv_vfrelu(vfloat32m8_t x, size_t vl) {
   return __riscv_vfmax_vf_f32m8(x, 0.0f, vl);
 }
 
+// Masked square root: sqrt(x) if x > 0, else x
+inline vfloat32m8_t riscv_vfmasked_sqrt(vfloat32m8_t x, size_t vl) {
+  // Create mask for elements > 0
+  auto mask = __riscv_vmfgt_vf_f32m8_b4(x, 0.0f, vl);
+
+  // Compute sqrt only for masked elements (mask-undisturbed policy)
+  // Elements where mask is false will retain their original value from x
+  return __riscv_vfsqrt_v_f32m8_mu(mask, x, x, vl);
+}
+
 template <typename F>
 void elementwise_loop_rvv(F f, float const *__restrict__ x, size_t n,
                           float *__restrict__ out) {

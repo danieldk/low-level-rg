@@ -49,6 +49,11 @@ void dish_scalar(float const *__restrict__ x, size_t n,
   elementwise_loop_scalar(dish, x, n, out);
 }
 
+void masked_sqrt_vectorized(float const *__restrict__ x, size_t n,
+                            float *__restrict__ out) {
+  elementwise_loop_rvv(riscv_vfmasked_sqrt, x, n, out);
+}
+
 TEST_CASE("Vectorized loop handles various buffer sizes", "[vectorized]") {
   for (size_t n : {1, 7, 16, 33, 64, 100, 257}) {
     std::vector<float> x(n);
@@ -138,5 +143,32 @@ TEST_CASE("Dish activation function", "[dish]") {
   for (size_t i = 0; i < x.size(); ++i) {
     INFO("x[" << i << "] = " << x[i]);
     REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).epsilon(0.01));
+  }
+}
+
+TEST_CASE("Masked square root activation", "[masked_sqrt]") {
+  std::vector<float> x;
+  // Mix of positive, negative, and zero values
+  for (float e = -5.0f; e <= 5.0f; e += 0.5f) {
+    x.push_back(e);
+  }
+
+  std::vector<float> out_vectorized(x.size());
+  std::vector<float> expected(x.size());
+
+  // Compute expected results
+  for (size_t i = 0; i < x.size(); ++i) {
+    if (x[i] > 0.0f) {
+      expected[i] = std::sqrt(x[i]);
+    } else {
+      expected[i] = x[i];
+    }
+  }
+
+  masked_sqrt_vectorized(x.data(), x.size(), out_vectorized.data());
+
+  for (size_t i = 0; i < x.size(); ++i) {
+    INFO("x[" << i << "] = " << x[i]);
+    REQUIRE(out_vectorized[i] == Approx(expected[i]).epsilon(0.0001));
   }
 }
