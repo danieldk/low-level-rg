@@ -27,7 +27,7 @@ inline float geluf_tanh_cook(float x) {
 
 inline float geluf_logistic(float x) { return x * logistic_cdf(1.702 * x); }
 
-inline float leaky_reluf(float x) { return x * std::max(0.01f, x); }
+inline float leaky_reluf(float x) { return std::max(0.01f * x, x); }
 
 template <typename F>
 void elementwise_loop_scalar(F f, float const *__restrict__ x, size_t n,
