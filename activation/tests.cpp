@@ -49,6 +49,58 @@ void dish_scalar(float const *__restrict__ x, size_t n,
   elementwise_loop_scalar(dish, x, n, out);
 }
 
+void leaky_relu_scalar(float const *__restrict__ x, size_t n,
+                       float *__restrict__ out) {
+  elementwise_loop_scalar(leaky_reluf, x, n, out);
+}
+
+void leaky_relu_max_vectorized(float const *__restrict__ x, size_t n,
+                               float *__restrict__ out) {
+  elementwise_loop_rvv(riscv_leaky_relu_max, x, n, out);
+}
+
+void leaky_relu_mask_vectorized(float const *__restrict__ x, size_t n,
+                                float *__restrict__ out) {
+  elementwise_loop_rvv(riscv_leaky_relu_masked, x, n, out);
+}
+
+// Test fixtures for activation functions
+struct SwishTest {
+  static constexpr auto vectorized = swish_vectorized;
+  static constexpr auto scalar = swish_scalar;
+  static constexpr const char *name = "Swish";
+};
+
+struct GeluCookTest {
+  static constexpr auto vectorized = gelu_cook_vectorized;
+  static constexpr auto scalar = gelu_cook_scalar;
+  static constexpr const char *name = "GELU Cook";
+};
+
+struct GeluLogisticTest {
+  static constexpr auto vectorized = gelu_logistic_vectorized;
+  static constexpr auto scalar = gelu_logistic_scalar;
+  static constexpr const char *name = "GELU Logistic";
+};
+
+struct DishTest {
+  static constexpr auto vectorized = dish_vectorized;
+  static constexpr auto scalar = dish_scalar;
+  static constexpr const char *name = "Dish";
+};
+
+struct LeakyReluMaxTest {
+  static constexpr auto vectorized = leaky_relu_max_vectorized;
+  static constexpr auto scalar = leaky_relu_scalar;
+  static constexpr const char *name = "Leaky ReLU Max";
+};
+
+struct LeakyReluMaskTest {
+  static constexpr auto vectorized = leaky_relu_mask_vectorized;
+  static constexpr auto scalar = leaky_relu_scalar;
+  static constexpr const char *name = "Leaky ReLU Mask";
+};
+
 TEST_CASE("Vectorized loop handles various buffer sizes", "[vectorized]") {
   for (size_t n : {1, 7, 16, 33, 64, 100, 257}) {
     std::vector<float> x(n);
@@ -69,7 +121,9 @@ TEST_CASE("Vectorized loop handles various buffer sizes", "[vectorized]") {
   }
 }
 
-TEST_CASE("Swish activation function", "[swish]") {
+TEMPLATE_TEST_CASE("Activation function correctness", "[activation]", SwishTest,
+                   GeluCookTest, GeluLogisticTest, DishTest, LeakyReluMaxTest,
+                   LeakyReluMaskTest) {
   std::vector<float> x;
   for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
     x.push_back(e);
@@ -78,65 +132,11 @@ TEST_CASE("Swish activation function", "[swish]") {
   std::vector<float> out_vectorized(x.size());
   std::vector<float> out_scalar(x.size());
 
-  swish_vectorized(x.data(), x.size(), out_vectorized.data());
-  swish_scalar(x.data(), x.size(), out_scalar.data());
+  TestType::vectorized(x.data(), x.size(), out_vectorized.data());
+  TestType::scalar(x.data(), x.size(), out_scalar.data());
 
   for (size_t i = 0; i < x.size(); ++i) {
-    INFO("x[" << i << "] = " << x[i]);
-    REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).epsilon(0.01));
-  }
-}
-
-TEST_CASE("GELU Cook approximation", "[gelu][cook]") {
-  std::vector<float> x;
-  for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
-    x.push_back(e);
-  }
-
-  std::vector<float> out_vectorized(x.size());
-  std::vector<float> out_scalar(x.size());
-
-  gelu_cook_vectorized(x.data(), x.size(), out_vectorized.data());
-  gelu_cook_scalar(x.data(), x.size(), out_scalar.data());
-
-  for (size_t i = 0; i < x.size(); ++i) {
-    INFO("x[" << i << "] = " << x[i]);
+    INFO(TestType::name << ": x[" << i << "] = " << x[i]);
     REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).margin(0.01));
-  }
-}
-
-TEST_CASE("GELU Logistic approximation", "[gelu][logistic]") {
-  std::vector<float> x;
-  for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
-    x.push_back(e);
-  }
-
-  std::vector<float> out_vectorized(x.size());
-  std::vector<float> out_scalar(x.size());
-
-  gelu_logistic_vectorized(x.data(), x.size(), out_vectorized.data());
-  gelu_logistic_scalar(x.data(), x.size(), out_scalar.data());
-
-  for (size_t i = 0; i < x.size(); ++i) {
-    INFO("x[" << i << "] = " << x[i]);
-    REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).margin(0.01));
-  }
-}
-
-TEST_CASE("Dish activation function", "[dish]") {
-  std::vector<float> x;
-  for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
-    x.push_back(e);
-  }
-
-  std::vector<float> out_vectorized(x.size());
-  std::vector<float> out_scalar(x.size());
-
-  dish_vectorized(x.data(), x.size(), out_vectorized.data());
-  dish_scalar(x.data(), x.size(), out_scalar.data());
-
-  for (size_t i = 0; i < x.size(); ++i) {
-    INFO("x[" << i << "] = " << x[i]);
-    REQUIRE(out_vectorized[i] == Approx(out_scalar[i]).epsilon(0.01));
   }
 }

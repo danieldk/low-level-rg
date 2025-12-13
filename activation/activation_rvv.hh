@@ -132,6 +132,16 @@ inline vfloat32m8_t riscv_vfrelu(vfloat32m8_t x, size_t vl) {
   return __riscv_vfmax_vf_f32m8(x, 0.0f, vl);
 }
 
+inline vfloat32m8_t riscv_leaky_relu_max(vfloat32m8_t x, size_t vl) {
+  auto leaky = __riscv_vfmul_vf_f32m8(x, 0.01f, vl);
+  return __riscv_vfmax_vv_f32m8(leaky, x, vl);
+}
+
+inline vfloat32m8_t riscv_leaky_relu_masked(vfloat32m8_t x, size_t vl) {
+  auto mask = __riscv_vmflt_vf_f32m8_b4(x, 0.0f, vl);
+  return __riscv_vfmul_vf_f32m8_mu(mask, x, x, 0.01f, vl);
+}
+
 template <typename F>
 void elementwise_loop_rvv(F f, float const *__restrict__ x, size_t n,
                           float *__restrict__ out) {
