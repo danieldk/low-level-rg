@@ -64,6 +64,16 @@ void leaky_relu_mask_vectorized(float const *__restrict__ x, size_t n,
   elementwise_loop_rvv(riscv_leaky_relu_masked, x, n, out);
 }
 
+void elish_vectorized(float const *__restrict__ x, size_t n,
+                      float *__restrict__ out) {
+  elementwise_loop_rvv(riscv_elish, x, n, out);
+}
+
+void elish_scalar(float const *__restrict__ x, size_t n,
+                  float *__restrict__ out) {
+  elementwise_loop_scalar(elishf, x, n, out);
+}
+
 // Test fixtures for activation functions
 struct SwishTest {
   static constexpr auto vectorized = swish_vectorized;
@@ -101,6 +111,12 @@ struct LeakyReluMaskTest {
   static constexpr const char *name = "Leaky ReLU Mask";
 };
 
+struct ElishTest {
+  static constexpr auto vectorized = elish_vectorized;
+  static constexpr auto scalar = elish_scalar;
+  static constexpr const char *name = "ELiSH";
+};
+
 TEST_CASE("Vectorized loop handles various buffer sizes", "[vectorized]") {
   for (size_t n : {1, 7, 16, 33, 64, 100, 257}) {
     std::vector<float> x(n);
@@ -123,7 +139,7 @@ TEST_CASE("Vectorized loop handles various buffer sizes", "[vectorized]") {
 
 TEMPLATE_TEST_CASE("Activation function correctness", "[activation]", SwishTest,
                    GeluCookTest, GeluLogisticTest, DishTest, LeakyReluMaxTest,
-                   LeakyReluMaskTest) {
+                   LeakyReluMaskTest, ElishTest) {
   std::vector<float> x;
   for (float e = -10.0f; e <= 10.0f; e += 0.25f) {
     x.push_back(e);

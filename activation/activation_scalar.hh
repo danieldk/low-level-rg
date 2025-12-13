@@ -18,16 +18,26 @@ inline float swishf(float x) { return x * logistic_cdf(x); }
 constexpr float SQRT_2_INV_PI = 0.7978845608028654;
 
 inline float geluf_tanh(float x) {
-  return 0.5f * x * (1.0f + tanhf(SQRT_2_INV_PI * (x + 0.044715f * x * x * x)));
+  return 0.5f * x *
+         (1.0f + std::tanhf(SQRT_2_INV_PI * (x + 0.044715f * x * x * x)));
 }
 
 inline float geluf_tanh_cook(float x) {
-  return 0.5f * x * (1.0f + tanhf(0.8f * x));
+  return 0.5f * x * (1.0f + std::tanhf(0.8f * x));
 }
 
 inline float geluf_logistic(float x) { return x * logistic_cdf(1.702 * x); }
 
 inline float leaky_reluf(float x) { return std::max(0.01f * x, x); }
+
+inline float elishf(float x) {
+  float logistic = logistic_cdf(x);
+  if (x >= 0.0f) {
+    return x * logistic;
+  } else {
+    return (std::expf(x) - 1.0f) * logistic;
+  }
+}
 
 template <typename F>
 void elementwise_loop_scalar(F f, float const *__restrict__ x, size_t n,
