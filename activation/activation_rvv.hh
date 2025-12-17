@@ -152,6 +152,13 @@ inline vfloat32m8_t riscv_elish(vfloat32m8_t x, size_t vl) {
   return __riscv_vfmul_vv_f32m8(numerator, logistic, vl);
 }
 
+inline vfloat32m8_t riscv_elu(vfloat32m8_t x, size_t vl) {
+  auto mask = __riscv_vmflt_vf_f32m8_b4(x, 0.0f, vl);
+  auto neg = riscv_vfexp(x, vl);
+  neg = __riscv_vfsub_vf_f32m8(neg, 1.0f, vl);
+  return __riscv_vmerge_vvm_f32m8(x, neg, mask, vl);
+}
+
 template <typename F>
 void elementwise_loop_rvv(F f, float const *__restrict__ x, size_t n,
                           float *__restrict__ out) {

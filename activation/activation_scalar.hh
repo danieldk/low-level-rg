@@ -39,6 +39,14 @@ inline float elishf(float x) {
   }
 }
 
+inline float eluf(float x) {
+  if (x >= 0.0f) {
+    return x;
+  } else {
+    return std::expf(x) - 1.0f;
+  }
+}
+
 template <typename F>
 void elementwise_loop_scalar(F f, float const *__restrict__ x, size_t n,
                              float *__restrict__ out) {

@@ -88,6 +88,17 @@ __attribute__((noinline)) void elish_vectorized(float const *__restrict__ x,
   elementwise_loop_rvv(riscv_elish, x, n, out);
 }
 
+__attribute__((noinline)) void elu_scalar(float const *__restrict__ x,
+                                          size_t n, float *__restrict__ out) {
+  elementwise_loop_scalar(eluf, x, n, out);
+}
+
+__attribute__((noinline)) void elu_vectorized(float const *__restrict__ x,
+                                              size_t n,
+                                              float *__restrict__ out) {
+  elementwise_loop_rvv(riscv_elu, x, n, out);
+}
+
 static std::vector<float> generate_test_data(size_t size) {
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
@@ -136,6 +147,9 @@ BENCHMARK(BM_activation<leaky_relu_mask_vectorized>)->Arg(BENCH_SIZE);
 
 BENCHMARK(BM_activation<elish_scalar>)->Arg(BENCH_SIZE);
 BENCHMARK(BM_activation<elish_vectorized>)->Arg(BENCH_SIZE);
+
+BENCHMARK(BM_activation<elu_scalar>)->Arg(BENCH_SIZE);
+BENCHMARK(BM_activation<elu_vectorized>)->Arg(BENCH_SIZE);
 
 // Alternative: Register with multiple sizes for comparison
 // BENCHMARK(BM_activation<swish_scalar>)->Range(1024, 1<<20);
